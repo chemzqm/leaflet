@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Example of leaflet</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <link rel="stylesheet" href="build/build.css">
+    <script src="build/build.js"></script>
+    <style>
+      body {
+        padding:100px;
+      }
+      #map {
+        height: 254px;
+      }
+      .leaflet-popup-content {
+        margin: 6px 8px;
+        font: 14px/16px Arial, Helvetica, sans-serif;
+        background: white;
+      }
+      .leaflet-popup-content h4 {
+        margin: 0 0 5px;
+        color: #777;
+      }
+
+      .legend {
+        text-align: left;
+        line-height: 18px;
+        color: #555;
+      }
+      .legend i {
+        width: 18px;
+        height: 18px;
+        float: left;
+        margin-right: 8px;
+        opacity: 0.7;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script type="text/javascript" src="china-states.js"></script>
+
+    <script>
+      var L = require('leaflet');
+      var map = L.map('map').setView([38 ,105], 3);
+
+      var cloudmade = L.tileLayer('http://{s}.tile.cloudmade.com/{key}/{styleId}/256/{z}/{x}/{y}.png', {
+        attribution: '',
+        key: 'BC9A493B41014CAABB98F0471D759707',
+        styleId: 22677
+      }).addTo(map);
+
+
+      function style(feature) {
+        //TODO
+        return {
+          weight: 2,
+          opacity: 1,
+          color: 'white',
+          dashArray: '3',
+          fillOpacity: 0.7,
+          fillColor: getColor(feature.properties.GEO_ID)
+        };
+      }
+
+      function highlightFeature(e) {
+        var layer = e.target;
+
+        if (!L.Browser.ie && !L.Browser.opera) {
+          layer.bringToFront();
+        }
+        var props = layer.feature.properties;
+        var popup = L.popup({
+            closeButton: false
+          })
+          .setLatLng(e.latlng)
+          .setContent('<h4>浏览量</h4><b>' + props.NAME + '</b><br />' + props.GEO_ID)
+          .openOn(map);
+      }
+
+      var geojson;
+
+      function zoomToFeature(e) {
+        map.fitBounds(e.target.getBounds());
+      }
+
+      function onEachFeature(feature, layer) {
+        layer.on({
+          click: highlightFeature
+        });
+      }
+
+      geojson = L.geoJson(statesData, {
+        style: style,
+        onEachFeature: onEachFeature
+      }).addTo(map);
+
+      var legend = L.control({position: 'bottomright'});
+
+      function getColor(d) {
+        return d > 500000 ? '#800026' :
+               d > 100000  ? '#BD0026' :
+               d > 50000  ? '#E31A1C' :
+               d > 20000  ? '#FC4E2A' :
+               d > 10000   ? '#FD8D3C' :
+               d > 5000   ? '#FEB24C' :
+               d > 1000   ? '#FED976' :
+                          '#FFEDA0';
+      }
+
+      function numberFormat (num){
+        return num >= 1000000 ? num/1000000 + 'm' :
+               num >= 1000? num/1000 + 'k' :
+               num;
+      }
+
+      legend.onAdd = function (map) {
+
+        var div = L.DomUtil.create('div', 'info legend'),
+          grades = [0, 1000, 5000, 10000, 20000, 50000, 100000, 500000],
+          labels = [],
+          from, to;
+
+        for (var i = 0; i < grades.length; i++) {
+          from = grades[i];
+          to = grades[i + 1];
+
+          labels.push(
+            '<i style="background:' + getColor(from + 1) + '"></i> ' +
+            numberFormat(from) + (to ? '&ndash;' + numberFormat(to) : '+'));
+        }
+
+        div.innerHTML = labels.join('<br>');
+        return div;
+      };
+
+      legend.addTo(map);
+    </script>
+  </body>
+</html>
